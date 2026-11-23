@@ -641,6 +641,12 @@ a.demochip:active{background:rgba(12,166,120,.16)}
 .exdemo-imgs{position:relative;width:100%;height:100%}
 .exdemo-imgs img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
 .exdemo-note{display:flex;align-items:center;justify-content:center;height:100%;padding:10px;text-align:center;font-size:11.5px;color:var(--mut2)}
+.exdemo.hasvid{background:#eef0f4}
+.exvid{width:100%;height:100%;object-fit:contain;background:#eef0f4;display:block;cursor:pointer}
+.exvid-tag{position:absolute;left:8px;bottom:8px;font-size:9.5px;font-weight:800;color:#fff;background:rgba(10,14,23,.6);padding:3px 8px;border-radius:20px;pointer-events:none;letter-spacing:.3px;text-transform:uppercase}
+.exmline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--txt);margin:4px 0 2px}
+.exmline b{font-weight:700}
+.exmline .exmsec{color:var(--mut);font-weight:500}
 .wcd{display:block;font-size:10px;font-weight:700;color:var(--mut2);text-transform:uppercase}
 .wcn{display:block;font-size:11px;font-weight:700;margin-top:4px;line-height:1.15}
 .wc.rest .wcn{color:var(--pep-ink)}
@@ -4437,7 +4443,7 @@ function loadStore(){ try{ const s=localStorage.getItem('stacksmart'); if(s) sto
 let saveWarned=false;
 function saveStore(){ try{ localStorage.setItem('stacksmart',JSON.stringify(store)); saveWarned=false; }catch(e){ if(!saveWarned){ saveWarned=true; try{ toast('Storage is full, recent changes may not be saved. Export a backup and clear old logs.'); }catch(_){} } } }
 function uid(){ return 's'+Math.random().toString(36).slice(2,9); }
-const APP_VERSION='3.14.1';
+const APP_VERSION='3.15.0';
 function applyTheme(){ try{ const t=(typeof store!=='undefined'&&store.theme)||'auto'; const dark = t==='dark' || (t==='auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches); document.documentElement.setAttribute('data-theme', dark?'dark':'light'); }catch(e){} }
 function setTheme(t){ store.theme=t; saveStore(); applyTheme(); if(document.getElementById('v-saved')) renderSaved&&renderSaved(); toast('Theme: '+(t==='auto'?'Automatic':t==='dark'?'Dark':'Light')); }
 try{ if(window.matchMedia){ window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{ if(!store.theme||store.theme==='auto') applyTheme(); }); } }catch(e){}
@@ -6818,15 +6824,15 @@ function swapTargets(exId){ const e=exById(exId); if(!e) return [];
     .sort((a,b)=>(exPrefScore(b.x.id)-exPrefScore(a.x.id)) || (b.overlap-a.overlap)).map(o=>o.x); }
 let swapFor=null;
 /* ---- exercise detail: history, records, charts (tap an exercise name) ---- */
-function openExDetail(exId){ const s=document.getElementById('exdetail-sheet'); if(!s) return; s.innerHTML=renderExDetail(exId); document.getElementById('exdetail').classList.add('open'); }
+function openExDetail(exId){ const s=document.getElementById('exdetail-sheet'); if(!s) return; s.innerHTML=renderExDetail(exId); document.getElementById('exdetail').classList.add('open'); try{ hydrateDemos(); }catch(e){} }
 function closeExDetail(){ const o=document.getElementById('exdetail'); if(o) o.classList.remove('open'); }
 function renderExDetail(exId){ const e=exById(exId); if(!e) return ''; const U=wUnit();
   const sets=(store.workouts||[]).filter(w=>w.exId===exId&&w.w!=null&&w.reps!=null);
   const dur=(store.workouts||[]).filter(w=>w.exId===exId&&w.dur!=null);
   const hd=`<div class="sheet-hd" style="display:flex;align-items:center;justify-content:space-between"><div><h3 style="margin:0;font-size:17px">${esc(e.name)}</h3><div style="font-size:11.5px;color:var(--mut)">${esc(e.muscle)} · ${esc(e.equip)}</div></div><button onclick="closeExDetail()" style="width:36px;height:36px;border-radius:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:15px;cursor:pointer" aria-label="Close">✕</button></div>`;
-  if(!sets.length&&!dur.length){ return hd+`<div class="picker-scroll">${exMuscleSVG(exId)}<div class="desc">No sets logged yet. Log this lift in Train and your history, records and charts show up here.</div><a class="formvid" href="${demoLink(e.name)}" target="_blank" rel="noopener">▶ Watch a proper-form video ↗</a></div>`; }
+  if(!sets.length&&!dur.length){ return hd+`<div class="picker-scroll">${exDemo(exId)}${exMuscleLine(exId)}<div class="desc">No sets logged yet. Log this lift in Train and your history, records and charts show up here.</div><a class="formvid" href="${demoLink(e.name)}" target="_blank" rel="noopener">▶ Watch a proper-form video ↗</a></div>`; }
   if(dur.length&&!sets.length){ const tot=dur.reduce((a,w)=>a+(+w.dur||0),0); const last=dur[dur.length-1];
-    return hd+`<div class="picker-scroll">${exMuscleSVG(exId)}<div class="jtiles"><div class="jtile"><div class="v">${dur.length}</div><div class="l">sessions</div></div><div class="jtile"><div class="v">${tot}</div><div class="l">total min</div></div><div class="jtile"><div class="v">${Math.round(tot/dur.length)}</div><div class="l">avg min</div></div></div>
+    return hd+`<div class="picker-scroll">${exDemo(exId)}${exMuscleLine(exId)}<div class="jtiles"><div class="jtile"><div class="v">${dur.length}</div><div class="l">sessions</div></div><div class="jtile"><div class="v">${tot}</div><div class="l">total min</div></div><div class="jtile"><div class="v">${Math.round(tot/dur.length)}</div><div class="l">avg min</div></div></div>
       <div class="section-title" style="font-size:12px">History</div>${[...dur].reverse().slice(0,40).map(w=>`<div class="logrow sm"><span class="ld">${w.date}</span><span>${w.dur} min</span></div>`).join('')}<a class="formvid" href="${demoLink(e.name)}" target="_blank" rel="noopener">▶ Watch a demo ↗</a></div>`; }
   const prW=sets.reduce((m,w)=>{ const dw=toDispW(w.w,w.unit); return dw>m.w?{w:dw,reps:+w.reps}:m; },{w:0,reps:0});
   const prE=Math.round(sets.reduce((m,w)=>Math.max(m,e1rm(toDispW(w.w,w.unit),w.reps)),0));
@@ -6840,7 +6846,7 @@ function renderExDetail(exId){ const e=exById(exId); if(!e) return ''; const U=w
     <div class="jtile"><div class="v">${totVol.toLocaleString()}</div><div class="l">total vol ${U}</div></div></div>`;
   const charts=(wpts.length>=2?`<div class="chartcard"><h3>Top-set weight</h3>${lineChart(wpts,'var(--pep)')}</div>`:'')+(epts.length>=2?`<div class="chartcard"><h3>Estimated 1RM</h3>${lineChart(epts,'var(--accent)')}</div>`:'');
   const hist=[...sets].reverse().slice(0,50).map(w=>{ const tm=setTypeMeta(w.type||'work'); const ef=(w.effort!=null)?` · ${(w.em||'rir').toUpperCase()} ${w.effort}`:''; return `<div class="logrow sm"><span class="ld">${w.date}</span><span><span class="settag ${tm.cls} on" style="padding:1px 6px;font-size:9.5px">${tm.lab}</span></span><span>${Math.round(toDispW(w.w,w.unit))}${U} × ${w.reps}${ef}</span></div>`; }).join('');
-  return hd+`<div class="picker-scroll">${exMuscleSVG(exId)}${tiles}${charts}<div class="section-title" style="font-size:12px">History (${totSets})</div>${hist}<a class="formvid" href="${demoLink(e.name)}" target="_blank" rel="noopener">▶ Watch a proper-form video ↗</a></div>`; }
+  return hd+`<div class="picker-scroll">${exDemo(exId)}${exMuscleLine(exId)}${tiles}${charts}<div class="section-title" style="font-size:12px">History (${totSets})</div>${hist}<a class="formvid" href="${demoLink(e.name)}" target="_blank" rel="noopener">▶ Watch a proper-form video ↗</a></div>`; }
 function openSwap(exId){ swapFor=exId; document.getElementById('swappick-sheet').innerHTML=renderSwap(); document.getElementById('swappick').classList.add('open'); }
 function closeSwap(){ document.getElementById('swappick').classList.remove('open'); swapFor=null; }
 function refreshSwap(){ const s=document.getElementById('swappick-sheet'); if(s&&document.getElementById('swappick').classList.contains('open')) s.innerHTML=renderSwap(); }
@@ -7142,12 +7148,33 @@ function renderRecovery(){ const map=groupLastTrained();
 function demoLink(name){ return 'https://www.youtube.com/results?search_query='+encodeURIComponent(name+' proper form technique'); }
 /* ---- exercise reference photos from free-exercise-db (public domain). Falls back to the video link. ---- */
 let FEDB=null, FEDB_LOADING=null; const FEDB_BASE='https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/';
-function exDemo(exId){ const e=exById(exId); if(!e) return ''; return `<div class="exdemo" data-name="${esc(e.name)}"><div class="exdemo-note">Loading reference…</div></div>`; }
+/* live exercise demos: animated MP4 + still + muscles, via the BioNyx Netlify proxy (keeps the API key server-side). Cached in store so it works offline after first load. */
+const EX_API='https://bionyx-app.netlify.app/.netlify/functions/exercise';
+function exMediaCache(){ if(!store.exMedia||typeof store.exMedia!=='object') store.exMedia={}; return store.exMedia; }
+const _exErr={};
+function exMediaGet(name){ if(!name) return null; const k=name.toLowerCase().trim(); const v=exMediaCache()[k]; if(v) return v; const e=_exErr[k]; if(e && (Date.now()-e)<36e5) return {err:1}; return null; }
+function exMediaSet(name,data){ if(!name) return; const k=name.toLowerCase().trim(); if(data.err){ _exErr[k]=Date.now(); return; } exMediaCache()[k]=Object.assign({ts:Date.now()},data); try{ saveStore(); }catch(e){} }
+let _exVidObs=null;
+function exVidObserver(){ if(_exVidObs) return _exVidObs; if(!('IntersectionObserver'in window)) return null;
+  _exVidObs=new IntersectionObserver(es=>{ es.forEach(en=>{ const v=en.target; if(en.isIntersecting){ const p=v.play&&v.play(); if(p&&p.catch)p.catch(()=>{}); } else { v.pause&&v.pause(); } }); },{threshold:.2}); return _exVidObs; }
+function exVidTap(v){ if(!v) return; if(v.paused){ const p=v.play&&v.play(); if(p&&p.catch)p.catch(()=>{}); } else { v.pause&&v.pause(); } }
+function exVidFail(v,name){ const d=v&&v.closest('.exdemo'); if(!d) return; d.classList.remove('hasvid'); const nm=name||d.getAttribute('data-name')||''; const m=exMediaGet(nm);
+  if(m&&m.image){ d.innerHTML=`<div class="exdemo-imgs" onclick="openZoom('${esc(m.image)}','${esc(nm)}')" title="Tap to zoom"><img src="${esc(m.image)}" alt="${esc(nm)} reference" loading="lazy" onerror="exDemoFail(this)"></div><div class="exdemo-note">Reference photo · tap to zoom.</div>`; }
+  else { fedbHydrate(d,nm); } }
+function exDemo(exId){ const e=exById(exId); if(!e) return ''; return `<div class="exdemo" data-name="${esc(e.name)}"><div class="exdemo-note">Loading demo…</div></div>`; }
 /* consistent, unambiguous muscle-group diagram for a lift: same anatomy every time, target muscles lit up */
 function exMuscleSVG(exId){ const e=exById(exId); if(!e||!e.mg||!e.mg.length) return ''; const set=new Set(e.mg);
   const fig=anatBody({view:'both',sex:store.sex,color:g=>set.has(g)?'#0ca678':null});
   const labs=e.mg.map(g=>(MGROUPS.find(m=>m[0]===g)||[null,g])[1]).filter(Boolean);
   return `<div class="exmuscle"><div class="exmuscle-cap"><span class="musdot"></span><b>Targets:</b> ${esc(labs.join(', '))}</div>${fig}</div>`; }
+function exMuscleLine(exId){ const e=exById(exId); if(!e) return '';
+  const tc=s=>s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+  const m=exMediaGet(e.name)||{};
+  let labs=(e.mg||[]).map(g=>(MGROUPS.find(mm=>mm[0]===g)||[null,g])[1]).filter(Boolean);
+  if(!labs.length && (m.target||[]).length) labs=m.target.map(tc);
+  const sec=(m.secondary||[]).map(tc).filter(x=>!labs.some(l=>l.toLowerCase()===x.toLowerCase())).slice(0,3);
+  if(!labs.length && !sec.length) return '';
+  return `<div class="exmline"><span class="musdot"></span><b>Targets:</b> ${esc(labs.join(', '))}${sec.length?` <span class="exmsec">· also ${esc(sec.join(', ').toLowerCase())}</span>`:''}</div>`; }
 function loadFEDB(){ if(FEDB) return Promise.resolve(FEDB); if(FEDB_LOADING) return FEDB_LOADING;
   FEDB_LOADING=Promise.race([ fetch(FEDB_BASE+'dist/exercises.json').then(r=>r.ok?r.json():[]), new Promise(res=>setTimeout(()=>res(null),6000)) ])
     .then(d=>{ FEDB=Array.isArray(d)?d:(FEDB||[]); return FEDB; }).catch(()=>{ FEDB=FEDB||[]; return FEDB; });
@@ -7158,11 +7185,28 @@ function fedbMatch(name){ if(!FEDB||!FEDB.length) return null; const norm=s=>s.t
   let best=null,bs=0; FEDB.forEach(x=>{ if(!x.images||!x.images.length) return; const xn=norm(x.name), xw=xn.split(' '); let s=qw.filter(w=>xw.includes(w)).length; if(xn===q)s+=5; else if(xn.includes(q))s+=2; if(s>bs){ bs=s; best=x; } });
   return bs>=1?best:null; }
 function exDemoFail(img){ const d=img.closest('.exdemo'); if(d) d.innerHTML='<div class="exdemo-note">Image unavailable. Use the video link below.</div>'; }
-function hydrateDemos(){ const els=[...document.querySelectorAll('.exdemo:not([data-done])')]; if(!els.length) return;
-  loadFEDB().then(()=>{ els.forEach(el=>{ el.setAttribute('data-done','1'); const m=fedbMatch(el.getAttribute('data-name')||'');
-    if(!m){ el.innerHTML=`<div class="exdemo-note">${(FEDB&&FEDB.length)?'No still image for this one yet, use the video link below.':'Reference photos need a connection the first time. Use the video link below.'}</div>`; return; }
+function demoRender(el,m,name){
+  if(m.video){ el.classList.add('hasvid');
+    el.innerHTML=`<video class="exvid" src="${esc(m.video)}"${m.image?` poster="${esc(m.image)}"`:''} loop muted playsinline preload="metadata" onclick="exVidTap(this)" onerror="exVidFail(this,'${esc((name||'').replace(/'/g,"\\'"))}')"></video><span class="exvid-tag">▶ demo loop</span>`;
+    const v=el.querySelector('video'); if(v){ v.muted=true; } const o=exVidObserver(); if(o&&v){ o.observe(v); } else if(v){ const p=v.play&&v.play(); if(p&&p.catch)p.catch(()=>{}); } return true; }
+  if(m.image){ el.innerHTML=`<div class="exdemo-imgs" onclick="openZoom('${esc(m.image)}','${esc(name)}')" title="Tap to zoom"><img src="${esc(m.image)}" alt="${esc(name)} reference" loading="lazy" onerror="exDemoFail(this)"></div><div class="exdemo-note">Reference photo · tap to zoom.</div>`; return true; }
+  return false; }
+function fedbHydrate(el,name){ el.classList.remove('hasvid');
+  loadFEDB().then(()=>{ const m=fedbMatch(name||'');
+    if(!m){ el.innerHTML=`<div class="exdemo-note">${(FEDB&&FEDB.length)?'No demo for this one yet — use the video link below.':'Demos need a connection the first time. Use the video link below.'}</div>`; return; }
     const imgs=m.images.slice(0,2).map(p=>FEDB_BASE+'exercises/'+p), two=imgs.length>1;
-    el.innerHTML=`<div class="exdemo-imgs" onclick="openZoom('${esc(imgs[0])}','${esc(m.name)}')" title="Tap to zoom">${imgs.map((u,i)=>`<img src="${esc(u)}" alt="${esc(m.name)} reference" class="${two?(i===0?'ff-a':'ff-b'):''}" loading="lazy" onerror="exDemoFail(this)">`).join('')}</div><div class="exdemo-note">Real reference photo · tap to zoom. Watch the video below for full form.</div>`; }); }); }
+    el.innerHTML=`<div class="exdemo-imgs" onclick="openZoom('${esc(imgs[0])}','${esc(m.name)}')" title="Tap to zoom">${imgs.map((u,i)=>`<img src="${esc(u)}" alt="${esc(m.name)} reference" class="${two?(i===0?'ff-a':'ff-b'):''}" loading="lazy" onerror="exDemoFail(this)">`).join('')}</div><div class="exdemo-note">Reference photo · tap to zoom. Video below for full form.</div>`;
+  }).catch(()=>{ el.innerHTML=`<div class="exdemo-note">Demo unavailable — use the video link below.</div>`; }); }
+function hydrateDemos(){ const els=[...document.querySelectorAll('.exdemo:not([data-done])')]; if(!els.length) return;
+  els.forEach(el=>{ el.setAttribute('data-done','1'); const name=el.getAttribute('data-name')||''; if(!name) return;
+    const cached=exMediaGet(name);
+    if(cached){ if(cached.err) fedbHydrate(el,name); else demoRender(el,cached,name); return; }
+    const ctl=('AbortController'in window)?new AbortController():null; const to=setTimeout(()=>{ if(ctl)ctl.abort(); },8000);
+    fetch(EX_API+'?name='+encodeURIComponent(name), ctl?{signal:ctl.signal}:{})
+      .then(r=>r.ok?r.json():Promise.reject()).then(d=>{ clearTimeout(to);
+        if(d && !d.error && (d.video||d.image)){ const m={video:d.video||null,image:d.image||null,target:d.target||[],secondary:d.secondary||[]}; exMediaSet(name,m); demoRender(el,m,name); }
+        else { exMediaSet(name,{err:1}); fedbHydrate(el,name); } })
+      .catch(()=>{ clearTimeout(to); exMediaSet(name,{err:1}); fedbHydrate(el,name); }); }); }
 function openZoom(src,alt){ const ov=document.getElementById('imgzoom'); if(!ov) return; ov.querySelector('.iz-body').innerHTML=`<button class="iz-x" onclick="closeZoom()" aria-label="Close">✕</button><img src="${esc(src)}" alt="${esc(alt||'')}" onclick="closeZoom()">`; ov.classList.add('open'); }
 function closeZoom(){ const ov=document.getElementById('imgzoom'); if(ov){ ov.classList.remove('open'); const b=ov.querySelector('.iz-body'); if(b) b.innerHTML=''; } }
 /* ---- offline exercise demo: a parametric stick-figure that flips between two poses (looks animated, no internet) ---- */
@@ -7382,8 +7426,8 @@ function renderTraining(){
       <div class="exlog"><div class="qgrp"><button onclick="bump('w-${exId}',-${incFor(exId)})" aria-label="Less weight">−</button><input id="w-${exId}" type="number" min="0" inputmode="decimal" placeholder="${l?Math.round(toDispW(l.w,l.unit)):(startWeight(exId)||'wt')}" title="Weight in ${wUnit()}"><button onclick="bump('w-${exId}',${incFor(exId)})" aria-label="More weight">+</button></div><span>×</span><div class="qgrp"><button onclick="bump('r-${exId}',-1)" aria-label="Fewer reps">−</button><input id="r-${exId}" type="number" min="0" inputmode="numeric" placeholder="reps"><button onclick="bump('r-${exId}',1)" aria-label="More reps">+</button></div><input id="e-${exId}" class="adv-only" type="number" min="0" inputmode="decimal" placeholder="${effortLabel()}" style="width:52px" title="${effMetric()==='rpe'?'Rate of perceived exertion, 6-10':'Reps in reserve, 0-5'}"><button class="minibtn" onclick="logSet('${exId}')">Log</button></div>
       ${(()=>{ const h=(store.workouts||[]).filter(w=>w.exId===exId).slice().reverse(); if(!h.length) return ''; return `<details class="exform exhist"><summary>Recent sets (${h.length})</summary>${h.slice(0,8).map(setHist).join('')}${h.length>8?`<div style="font-size:10.5px;color:var(--mut2);margin-top:4px">Showing 8 most recent.</div>`:''}</details>`; })()}
       <details class="exform" open><summary>Muscles, demo &amp; form</summary>
-        ${exMuscleSVG(exId)}
         ${exDemo(exId)}
+        ${exMuscleLine(exId)}
         <a class="formvid" href="${demoLink(e.name)}" target="_blank" rel="noopener">▶ Watch a proper-form video for ${esc(e.name)} ↗</a>
         ${F?`<div class="ff"><b>Setup &amp; execution.</b> ${F.cue}</div>
         <div class="ff mis"><b>Common mistake.</b> ${F.mistake}</div>
