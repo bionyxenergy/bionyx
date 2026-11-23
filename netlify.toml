@@ -1,0 +1,8 @@
+# BioNyx Netlify config
+# Serves the site from the repo root and enables the exercise-GIF function.
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
