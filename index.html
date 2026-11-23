@@ -647,6 +647,12 @@ a.demochip:active{background:rgba(12,166,120,.16)}
 .exmline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--txt);margin:4px 0 2px}
 .exmline b{font-weight:700}
 .exmline .exmsec{color:var(--mut);font-weight:500}
+.explay{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:6px;background:rgba(10,14,23,.8);color:#fff;border:none;border-radius:22px;padding:7px 15px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;letter-spacing:.2px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.explay .ptri{font-size:10px}
+.explay:active{transform:translateX(-50%) scale(.95)}
+.exzoombtn{position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:8px;background:rgba(10,14,23,.62);color:#fff;border:none;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
+.exzoombtn:active{transform:scale(.92)}
+.iz-body video{max-width:100%;max-height:100%;border-radius:10px}
 .wcd{display:block;font-size:10px;font-weight:700;color:var(--mut2);text-transform:uppercase}
 .wcn{display:block;font-size:11px;font-weight:700;margin-top:4px;line-height:1.15}
 .wc.rest .wcn{color:var(--pep-ink)}
@@ -4443,7 +4449,7 @@ function loadStore(){ try{ const s=localStorage.getItem('stacksmart'); if(s) sto
 let saveWarned=false;
 function saveStore(){ try{ localStorage.setItem('stacksmart',JSON.stringify(store)); saveWarned=false; }catch(e){ if(!saveWarned){ saveWarned=true; try{ toast('Storage is full, recent changes may not be saved. Export a backup and clear old logs.'); }catch(_){} } } }
 function uid(){ return 's'+Math.random().toString(36).slice(2,9); }
-const APP_VERSION='3.15.0';
+const APP_VERSION='3.16.0';
 function applyTheme(){ try{ const t=(typeof store!=='undefined'&&store.theme)||'auto'; const dark = t==='dark' || (t==='auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches); document.documentElement.setAttribute('data-theme', dark?'dark':'light'); }catch(e){} }
 function setTheme(t){ store.theme=t; saveStore(); applyTheme(); if(document.getElementById('v-saved')) renderSaved&&renderSaved(); toast('Theme: '+(t==='auto'?'Automatic':t==='dark'?'Dark':'Light')); }
 try{ if(window.matchMedia){ window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{ if(!store.theme||store.theme==='auto') applyTheme(); }); } }catch(e){}
@@ -7160,8 +7166,8 @@ function exVidObserver(){ if(_exVidObs) return _exVidObs; if(!('IntersectionObse
 function exVidTap(v){ if(!v) return; if(v.paused){ const p=v.play&&v.play(); if(p&&p.catch)p.catch(()=>{}); } else { v.pause&&v.pause(); } }
 function exVidFail(v,name){ const d=v&&v.closest('.exdemo'); if(!d) return; d.classList.remove('hasvid'); const nm=name||d.getAttribute('data-name')||''; const m=exMediaGet(nm);
   if(m&&m.image){ d.innerHTML=`<div class="exdemo-imgs" onclick="openZoom('${esc(m.image)}','${esc(nm)}')" title="Tap to zoom"><img src="${esc(m.image)}" alt="${esc(nm)} reference" loading="lazy" onerror="exDemoFail(this)"></div><div class="exdemo-note">Reference photo · tap to zoom.</div>`; }
-  else { fedbHydrate(d,nm); } }
-function exDemo(exId){ const e=exById(exId); if(!e) return ''; return `<div class="exdemo" data-name="${esc(e.name)}"><div class="exdemo-note">Loading demo…</div></div>`; }
+  else { fedbPhoto(d,nm); } }
+function exDemo(exId){ const e=exById(exId); if(!e) return ''; return `<div class="exdemo" data-name="${esc(e.name)}" data-equip="${esc(e.equip||'')}"><div class="exdemo-note">Loading demo…</div></div>`; }
 /* consistent, unambiguous muscle-group diagram for a lift: same anatomy every time, target muscles lit up */
 function exMuscleSVG(exId){ const e=exById(exId); if(!e||!e.mg||!e.mg.length) return ''; const set=new Set(e.mg);
   const fig=anatBody({view:'both',sex:store.sex,color:g=>set.has(g)?'#0ca678':null});
@@ -7179,34 +7185,43 @@ function loadFEDB(){ if(FEDB) return Promise.resolve(FEDB); if(FEDB_LOADING) ret
   FEDB_LOADING=Promise.race([ fetch(FEDB_BASE+'dist/exercises.json').then(r=>r.ok?r.json():[]), new Promise(res=>setTimeout(()=>res(null),6000)) ])
     .then(d=>{ FEDB=Array.isArray(d)?d:(FEDB||[]); return FEDB; }).catch(()=>{ FEDB=FEDB||[]; return FEDB; });
   return FEDB_LOADING; }
-const FEDB_ALIAS={'pull-ups / lat pulldown':'pullups','seated db shoulder press':'dumbbell shoulder press','one-arm db row':'dumbbell row','overhead triceps ext.':'triceps extension','triceps pushdown':'triceps pushdown','seated cable row':'seated cable row','standing calf raise':'standing calf raises','incline db press':'incline dumbbell press','barbell row':'bent over barbell row','face pull':'face pull','lateral raise':'side lateral raise','hammer curl':'hammer curls','incline db curl':'incline dumbbell curl','leg extension':'leg extensions','lying leg curl':'lying leg curls'};
+const FEDB_ALIAS={'barbell bench press':'barbell bench press - medium grip','incline db press':'incline dumbbell press','overhead press':'barbell shoulder press','seated db shoulder press':'dumbbell shoulder press','dips':'dips - triceps version','lateral raise':'side lateral raise','cable fly':'flat bench cable flyes','triceps pushdown':'triceps pushdown','overhead triceps ext.':'cable rope overhead triceps extension','pull-ups / lat pulldown':'pullups','barbell row':'bent over barbell row','one-arm db row':'one-arm dumbbell row','seated cable row':'seated cable rows','face pull':'face pull','barbell curl':'barbell curl','incline db curl':'incline dumbbell curl','hammer curl':'hammer curls','back squat':'barbell full squat','front squat':'front barbell squat','romanian deadlift':'romanian deadlift','deadlift':'barbell deadlift','leg press':'leg press','walking lunge':'barbell walking lunge','leg extension':'leg extensions','lying leg curl':'lying leg curls','standing calf raise':'standing calf raises','hip thrust':'barbell hip thrust','plank':'plank','hanging leg raise':'hanging leg raise','cable crunch':'cable crunch','ab wheel rollout':'ab roller','side plank':'side bridge','russian twist':'russian twist'};
 function fedbMatch(name){ if(!FEDB||!FEDB.length) return null; const norm=s=>s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
   const q=norm(FEDB_ALIAS[name.toLowerCase()]||name); const qw=q.split(' ').filter(w=>w.length>2);
   let best=null,bs=0; FEDB.forEach(x=>{ if(!x.images||!x.images.length) return; const xn=norm(x.name), xw=xn.split(' '); let s=qw.filter(w=>xw.includes(w)).length; if(xn===q)s+=5; else if(xn.includes(q))s+=2; if(s>bs){ bs=s; best=x; } });
   return bs>=1?best:null; }
 function exDemoFail(img){ const d=img.closest('.exdemo'); if(d) d.innerHTML='<div class="exdemo-note">Image unavailable. Use the video link below.</div>'; }
-function demoRender(el,m,name){
-  if(m.video){ el.classList.add('hasvid');
-    el.innerHTML=`<video class="exvid" src="${esc(m.video)}"${m.image?` poster="${esc(m.image)}"`:''} loop muted playsinline preload="metadata" onclick="exVidTap(this)" onerror="exVidFail(this,'${esc((name||'').replace(/'/g,"\\'"))}')"></video><span class="exvid-tag">▶ demo loop</span>`;
-    const v=el.querySelector('video'); if(v){ v.muted=true; } const o=exVidObserver(); if(o&&v){ o.observe(v); } else if(v){ const p=v.play&&v.play(); if(p&&p.catch)p.catch(()=>{}); } return true; }
-  if(m.image){ el.innerHTML=`<div class="exdemo-imgs" onclick="openZoom('${esc(m.image)}','${esc(name)}')" title="Tap to zoom"><img src="${esc(m.image)}" alt="${esc(name)} reference" loading="lazy" onerror="exDemoFail(this)"></div><div class="exdemo-note">Reference photo · tap to zoom.</div>`; return true; }
-  return false; }
-function fedbHydrate(el,name){ el.classList.remove('hasvid');
-  loadFEDB().then(()=>{ const m=fedbMatch(name||'');
-    if(!m){ el.innerHTML=`<div class="exdemo-note">${(FEDB&&FEDB.length)?'No demo for this one yet — use the video link below.':'Demos need a connection the first time. Use the video link below.'}</div>`; return; }
+/* default visual: clean, watermark-free start/end reference photos (they flip between the two positions, so they animate on their own). A ▶ Play button fetches the smoother API animation on demand (that's where the watermark is, so it only appears if you ask for it). Both zoom. */
+function fedbPhoto(el,name){ el.classList.remove('hasvid');
+  loadFEDB().then(()=>{ const m=fedbMatch(name||''); const nm=esc((name||(m&&m.name)||'').replace(/'/g,"\\'"));
+    if(!m){ el.innerHTML=`<div class="exdemo-note">${(FEDB&&FEDB.length)?'No reference image yet.':'Reference images need a connection the first time.'}</div>`
+        +`<button class="explay" onclick="event.stopPropagation();exPlayVideo(this.closest('.exdemo'))" aria-label="Play animated demo"><span class="ptri">▶</span> Play demo</button>`; return; }
     const imgs=m.images.slice(0,2).map(p=>FEDB_BASE+'exercises/'+p), two=imgs.length>1;
-    el.innerHTML=`<div class="exdemo-imgs" onclick="openZoom('${esc(imgs[0])}','${esc(m.name)}')" title="Tap to zoom">${imgs.map((u,i)=>`<img src="${esc(u)}" alt="${esc(m.name)} reference" class="${two?(i===0?'ff-a':'ff-b'):''}" loading="lazy" onerror="exDemoFail(this)">`).join('')}</div><div class="exdemo-note">Reference photo · tap to zoom. Video below for full form.</div>`;
-  }).catch(()=>{ el.innerHTML=`<div class="exdemo-note">Demo unavailable — use the video link below.</div>`; }); }
+    el.innerHTML=`<div class="exdemo-imgs" onclick="exZoomPhoto(this.querySelector('img'),'${nm}')" title="Tap to enlarge">${imgs.map((u,i)=>`<img src="${esc(u)}" alt="${esc(m.name)} reference" class="${two?(i===0?'ff-a':'ff-b'):''}" loading="lazy" onerror="exDemoFail(this)">`).join('')}</div>`
+      +`<button class="explay" onclick="event.stopPropagation();exPlayVideo(this.closest('.exdemo'))" aria-label="Play animated demo"><span class="ptri">▶</span> Play demo</button>`
+      +`<button class="exzoombtn" onclick="event.stopPropagation();exZoomPhoto(this.closest('.exdemo').querySelector('img'),'${nm}')" aria-label="Enlarge" title="Enlarge">⤢</button>`;
+  }).catch(()=>{ el.innerHTML=`<div class="exdemo-note">Reference unavailable.</div>`; }); }
+function demoRender(el,m,name){ // the API animation, after the user taps Play
+  el.classList.add('hasvid');
+  el.innerHTML=`<video class="exvid" src="${esc(m.video)}"${m.image?` poster="${esc(m.image)}"`:''} loop muted playsinline preload="metadata" onclick="exZoomVid(this)" onerror="exVidFail(this,'${esc((name||'').replace(/'/g,"\\'"))}')"></video><span class="exvid-tag">▶ demo loop</span><button class="exzoombtn" onclick="event.stopPropagation();exZoomVid(this.closest('.exdemo').querySelector('video'))" aria-label="Enlarge" title="Enlarge">⤢</button>`;
+  const v=el.querySelector('video'); if(v){ v.muted=true; } const o=exVidObserver(); if(o&&v){ o.observe(v); } else if(v){ const p=v.play&&v.play(); if(p&&p.catch)p.catch(()=>{}); } }
+function exPlayVideo(el){ if(!el) return; const name=el.getAttribute('data-name')||''; const equip=el.getAttribute('data-equip')||'';
+  const cached=exMediaGet(name);
+  if(cached && !cached.err && cached.video){ demoRender(el,cached,name); return; }
+  el.classList.remove('hasvid'); el.innerHTML=`<div class="exdemo-note">Loading animation…</div>`;
+  const ctl=('AbortController'in window)?new AbortController():null; const to=setTimeout(()=>{ if(ctl)ctl.abort(); },9000);
+  fetch(EX_API+'?name='+encodeURIComponent(name)+(equip?'&equip='+encodeURIComponent(equip):''), ctl?{signal:ctl.signal}:{})
+    .then(r=>r.ok?r.json():Promise.reject()).then(d=>{ clearTimeout(to);
+      if(d && !d.error && d.video){ const m={video:d.video,image:d.image||null,target:d.target||[],secondary:d.secondary||[]}; exMediaSet(name,m); demoRender(el,m,name); }
+      else if(d && !d.error){ exMediaSet(name,{err:1}); fedbPhoto(el,name); const d2=el.querySelector('.exdemo-note'); if(d2) d2.textContent='No animation for this one — reference photo shown.'; }
+      else { exMediaSet(name,{err:1}); fedbPhoto(el,name); } })
+    .catch(()=>{ clearTimeout(to); fedbPhoto(el,name); }); }
+function exZoomPhoto(img,name){ const src=img&&img.getAttribute&&img.getAttribute('src'); if(src) openZoom(src,name); }
+function exZoomVid(v){ if(!v) return; const src=v.getAttribute('src'); const ov=document.getElementById('imgzoom'); if(!ov||!src) return;
+  ov.querySelector('.iz-body').innerHTML=`<button class="iz-x" onclick="closeZoom()" aria-label="Close">✕</button><video src="${esc(src)}" loop muted playsinline onclick="closeZoom()"></video>`; ov.classList.add('open');
+  const zv=ov.querySelector('video'); if(zv){ zv.muted=true; const p=zv.play&&zv.play(); if(p&&p.catch)p.catch(()=>{}); } }
 function hydrateDemos(){ const els=[...document.querySelectorAll('.exdemo:not([data-done])')]; if(!els.length) return;
-  els.forEach(el=>{ el.setAttribute('data-done','1'); const name=el.getAttribute('data-name')||''; if(!name) return;
-    const cached=exMediaGet(name);
-    if(cached){ if(cached.err) fedbHydrate(el,name); else demoRender(el,cached,name); return; }
-    const ctl=('AbortController'in window)?new AbortController():null; const to=setTimeout(()=>{ if(ctl)ctl.abort(); },8000);
-    fetch(EX_API+'?name='+encodeURIComponent(name), ctl?{signal:ctl.signal}:{})
-      .then(r=>r.ok?r.json():Promise.reject()).then(d=>{ clearTimeout(to);
-        if(d && !d.error && (d.video||d.image)){ const m={video:d.video||null,image:d.image||null,target:d.target||[],secondary:d.secondary||[]}; exMediaSet(name,m); demoRender(el,m,name); }
-        else { exMediaSet(name,{err:1}); fedbHydrate(el,name); } })
-      .catch(()=>{ clearTimeout(to); exMediaSet(name,{err:1}); fedbHydrate(el,name); }); }); }
+  els.forEach(el=>{ el.setAttribute('data-done','1'); const name=el.getAttribute('data-name')||''; if(!name) return; fedbPhoto(el,name); }); }
 function openZoom(src,alt){ const ov=document.getElementById('imgzoom'); if(!ov) return; ov.querySelector('.iz-body').innerHTML=`<button class="iz-x" onclick="closeZoom()" aria-label="Close">✕</button><img src="${esc(src)}" alt="${esc(alt||'')}" onclick="closeZoom()">`; ov.classList.add('open'); }
 function closeZoom(){ const ov=document.getElementById('imgzoom'); if(ov){ ov.classList.remove('open'); const b=ov.querySelector('.iz-body'); if(b) b.innerHTML=''; } }
 /* ---- offline exercise demo: a parametric stick-figure that flips between two poses (looks animated, no internet) ---- */
