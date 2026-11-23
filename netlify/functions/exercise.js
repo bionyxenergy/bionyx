@@ -1,48 +1,44 @@
-// BioNyx exercise-GIF proxy.
-// Keeps your RapidAPI key server-side. Set these in Netlify:
-//   Site settings -> Environment variables
-//     EXERCISEDB_KEY   = your RapidAPI key
-//     EXERCISEDB_HOST  = the x-rapidapi-host from your RapidAPI console's "Headers" tab
-//                        (e.g. edb-with-gifs-and-images-by-ascendapi.p.rapidapi.com)
+// BioNyx exercise-media proxy (debug build).
+// Env vars in Netlify: EXERCISEDB_KEY, EXERCISEDB_HOST
 const KEY  = process.env.EXERCISEDB_KEY;
 const HOST = process.env.EXERCISEDB_HOST;
 
 exports.handler = async (event) => {
-  const cors = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'application/json',
-    'Cache-Control': 'public, max-age=604800' // cache a week at the edge/browser
-  };
-  const name = ((event.queryStringParameters || {}).name || '').trim();
+  const cors = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=604800' };
+  const q = event.queryStringParameters || {};
+  const name = (q.name || '').trim();
+  const debug = q.debug === '1';
   if (!name) return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'name query param required' }) };
   if (!KEY || !HOST) return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'EXERCISEDB_KEY / EXERCISEDB_HOST not set in Netlify env' }) };
 
   const h = { 'x-rapidapi-key': KEY, 'x-rapidapi-host': HOST };
-  const pick = (o) => o ? (o['360p'] || o['480p'] || o['720p'] || Object.values(o)[0]) : null;
+  const pick = (o) => (o && typeof o === 'object') ? (o['360p'] || o['480p'] || o['720p'] || Object.values(o)[0]) : (typeof o === 'string' ? o : null);
+  const gifOf = (ex) => pick(ex.gifUrls) || ex.gifUrl || ex.gif || pick(ex.videoUrls) || ex.videoUrl || ex.video || ex.animationUrl || null;
+  const imgOf = (ex) => pick(ex.imageUrls) || ex.imageUrl || ex.image || null;
 
   try {
-    // 1) fuzzy-search the exercise by name
     const sRes = await fetch(`https://${HOST}/api/v1/exercises/search?search=${encodeURIComponent(name)}&threshold=0.3`, { headers: h });
-    if (!sRes.ok) return { statusCode: sRes.status, headers: cors, body: JSON.stringify({ error: 'search failed', status: sRes.status }) };
-    const sJson = await sRes.json();
-    const list = Array.isArray(sJson) ? sJson : (sJson.data || sJson.exercises || sJson.results || []);
-    if (!list.length) return { statusCode: 200, headers: cors, body: JSON.stringify({ gif: null, image: null, name: null }) };
+    const sTxt = await sRes.text(); let sJson; try { sJson = JSON.parse(sTxt); } catch (e) { sJson = sTxt; }
+    const list = Array.isArray(sJson) ? sJson : ((sJson && (sJson.data || sJson.exercises || sJson.results)) || []);
+    if (!list.length) return { statusCode: 200, headers: cors, body: JSON.stringify({ gif: null, image: null, name: null, _searchStatus: sRes.status, _debug: debug ? sJson : undefined }) };
 
     const top = list[0];
-    const id  = top.exerciseId || top.id;
-    let gif = null, image = top.imageUrl || null;
+    const id  = top.exerciseId || top.id || top._id || top.uuid;
+    let gif = gifOf(top), image = imgOf(top), rawDetail = null, detailStatus = null;
 
-    // 2) fetch the single exercise for its GIF url(s)
     if (id) {
       const dRes = await fetch(`https://${HOST}/api/v1/exercises/${encodeURIComponent(id)}`, { headers: h });
-      if (dRes.ok) {
-        const d  = await dRes.json();
-        const ex = d.data || d;
-        gif   = pick(ex.gifUrls)   || ex.gifUrl   || gif;
-        image = pick(ex.imageUrls) || ex.imageUrl || image;
-      }
+      detailStatus = dRes.status;
+      const dTxt = await dRes.text(); let dJson; try { dJson = JSON.parse(dTxt); } catch (e) { dJson = dTxt; }
+      const ex = (dJson && (dJson.data || dJson)) || {};
+      rawDetail = ex;
+      gif = gifOf(ex) || gif;
+      image = imgOf(ex) || image;
     }
-    return { statusCode: 200, headers: cors, body: JSON.stringify({ gif, image, name: top.name || null, query: name }) };
+
+    const out = { gif, image, name: top.name || null, query: name };
+    if (debug) { out._id = id; out._searchKeys = Object.keys(top); out._searchItem = top; out._detailStatus = detailStatus; out._detailKeys = rawDetail ? Object.keys(rawDetail) : null; out._detail = rawDetail; }
+    return { statusCode: 200, headers: cors, body: JSON.stringify(out) };
   } catch (e) {
     return { statusCode: 500, headers: cors, body: JSON.stringify({ error: String((e && e.message) || e) }) };
   }
