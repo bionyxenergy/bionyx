@@ -653,6 +653,31 @@ a.demochip:active{background:rgba(12,166,120,.16)}
 .exzoombtn{position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:8px;background:rgba(10,14,23,.62);color:#fff;border:none;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
 .exzoombtn:active{transform:scale(.92)}
 .iz-body video{max-width:100%;max-height:100%;border-radius:10px}
+/* set-by-set logging table */
+.settbl{margin:6px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card2)}
+.sthd,.strow{display:grid;grid-template-columns:30px 48px 1fr 1fr 52px 22px;align-items:center;gap:5px;padding:7px 8px}
+.sthd{background:var(--card);font-size:9.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--mut2);border-bottom:1px solid var(--line)}
+.sthd span{text-align:center}.sthd span:nth-child(3),.sthd span:nth-child(4){text-align:left;padding-left:4px}
+.strow{border-bottom:1px solid var(--line);position:relative}
+.strow:last-of-type{border-bottom:none}
+.strow.done{background:rgba(12,166,110,.07)}
+.st-setn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);font-size:11px;font-weight:800;color:var(--mut);background:var(--card);cursor:pointer;padding:0;font-family:inherit}
+.st-setn.warm{border-color:#d7a93a;color:#d7a93a}.st-setn.top{border-color:var(--ana);color:var(--ana-ink)}.st-setn.back{border-color:#5b86f0;color:#5b86f0}.st-setn.drop{border-color:#c05bd0;color:#c05bd0}.st-setn.amrap{border-color:#0ca678;color:#0ca678}.st-setn.rp{border-color:#e2893b;color:#e2893b}
+.st-prev{font-size:11px;color:var(--mut2);text-align:center;white-space:nowrap;overflow:hidden}
+.strow input{width:100%;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--txt);font-size:14px;font-weight:700;text-align:center;font-family:inherit;min-width:0}
+.strow input:focus{outline:none;border-color:var(--accent);background:var(--card2)}
+.strow.done input{border-color:transparent;background:transparent;color:var(--txt)}
+.st-log{width:100%;height:32px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;padding:0}
+.st-log.done{background:transparent;color:var(--accent);font-size:18px}
+.st-more{width:22px;height:30px;border:none;background:transparent;color:var(--mut2);font-size:17px;cursor:pointer;padding:0;line-height:1}
+.st-foot{display:flex;gap:8px;align-items:center;padding:8px;background:var(--card);border-top:1px solid var(--line)}
+.stadd{flex:1;height:34px;border:1px dashed var(--mut2);border-radius:8px;background:transparent;color:var(--accent-ink);font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit}
+.stadd:active{background:var(--accent-dim)}
+.stmenu{position:absolute;right:26px;top:30px;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;min-width:148px}
+.stmenu button{display:block;width:100%;text-align:left;padding:11px 14px;background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--txt);font-size:13px;cursor:pointer;font-family:inherit}
+.stmenu button:last-child{border-bottom:none}
+.stmenu button.del{color:var(--ana)}
+.stmenu button:active{background:var(--card2)}
 .wcd{display:block;font-size:10px;font-weight:700;color:var(--mut2);text-transform:uppercase}
 .wcn{display:block;font-size:11px;font-weight:700;margin-top:4px;line-height:1.15}
 .wc.rest .wcn{color:var(--pep-ink)}
@@ -4449,7 +4474,7 @@ function loadStore(){ try{ const s=localStorage.getItem('stacksmart'); if(s) sto
 let saveWarned=false;
 function saveStore(){ try{ localStorage.setItem('stacksmart',JSON.stringify(store)); saveWarned=false; }catch(e){ if(!saveWarned){ saveWarned=true; try{ toast('Storage is full, recent changes may not be saved. Export a backup and clear old logs.'); }catch(_){} } } }
 function uid(){ return 's'+Math.random().toString(36).slice(2,9); }
-const APP_VERSION='3.16.0';
+const APP_VERSION='3.17.0';
 function applyTheme(){ try{ const t=(typeof store!=='undefined'&&store.theme)||'auto'; const dark = t==='dark' || (t==='auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches); document.documentElement.setAttribute('data-theme', dark?'dark':'light'); }catch(e){} }
 function setTheme(t){ store.theme=t; saveStore(); applyTheme(); if(document.getElementById('v-saved')) renderSaved&&renderSaved(); toast('Theme: '+(t==='auto'?'Automatic':t==='dark'?'Dark':'Light')); }
 try{ if(window.matchMedia){ window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{ if(!store.theme||store.theme==='auto') applyTheme(); }); } }catch(e){}
@@ -7383,6 +7408,62 @@ function dayIntent(dn,exs){ const lifts=(exs||[]).map(exById).filter(Boolean); i
     : (cardioN?`Conditioning &amp; recovery, keep your heart rate in the easy-to-moderate zone.`:`Mobility &amp; recovery, loosen tight areas and prime for the next session.`);
   return `<div class="dayintent"><div class="di-top">🎯 ${esc(dn)}, ${focus}</div><div class="di-sub">${parts.join(' · ')}. ${intent}</div></div>`;
 }
+/* ---- set-by-set logging table (each set is a row; "Prev." shows last session; rows log in place so drafts aren't lost) ---- */
+function stTypeShort(t){ return {warm:'W',work:'',top:'T',back:'B',amrap:'A',drop:'D',rp:'RP'}[t]||''; }
+function stPrevSets(exId){ const ws=(store.workouts||[]).filter(w=>w.exId===exId && w.date!==todayKey() && w.w!=null); if(!ws.length) return []; const ld=ws.reduce((m,w)=>w.date>m?w.date:m,ws[0].date); return ws.filter(w=>w.date===ld); }
+function stTodaySets(exId){ return (store.workouts||[]).filter(w=>w.exId===exId && w.date===todayKey() && w.w!=null); }
+function stRowHTML(exId,i,committed,prev){ const type=committed?(committed.type||'work'):'work'; const m=setTypeMeta(type); const short=stTypeShort(type);
+  const done=!!committed; const wv=done?(Math.round(toDispW(committed.w,committed.unit)*100)/100):''; const rv=done?committed.reps:'';
+  const phW=prev?Math.round(toDispW(prev.w,prev.unit)):''; const phR=prev?prev.reps:'';
+  const prevTxt=prev?`${Math.round(toDispW(prev.w,prev.unit))}×${prev.reps}`:'–';
+  return `<div class="strow ${done?'done':''}" data-ex="${esc(exId)}" data-type="${type}"${done?` data-wid="${committed.id}"`:''}>`
+    +`<button class="st-setn ${m.cls}" onclick="stCycleType(this)" title="Set type: ${m.lab}. Tap to change.">${short||(i+1)}</button>`
+    +`<span class="st-prev">${prevTxt}</span>`
+    +`<div><input class="st-w" type="number" min="0" inputmode="decimal" value="${wv}" placeholder="${phW||'–'}" oninput="stEdit(this)" aria-label="Load"></div>`
+    +`<div><input class="st-r" type="number" min="0" inputmode="numeric" value="${rv}" placeholder="${phR||''}" oninput="stEdit(this)" aria-label="Reps"></div>`
+    +`<button class="st-log ${done?'done':''}" onclick="stLog(this)" aria-label="${done?'Logged, tap to re-log':'Log set'}">${done?'✓':'Log'}</button>`
+    +`<button class="st-more" onclick="stMenu(this)" aria-label="Set options">⋮</button></div>`; }
+function setTable(exId){ const target=effSets(); const today=stTodaySets(exId); const prev=stPrevSets(exId); const U=wUnit();
+  const count=Math.max(target, today.length, 1); let rows='';
+  for(let i=0;i<count;i++){ rows+=stRowHTML(exId,i,today[i]||null,prev[i]||null); }
+  return `<div class="settbl" id="settbl-${esc(exId)}">`
+    +`<div class="sthd"><span>Set</span><span>Prev</span><span>Load (${U})</span><span>Reps</span><span></span><span></span></div>`
+    +rows
+    +`<div class="st-foot"><button class="stadd" onclick="stAddRow('${esc(exId)}')">+ Add set</button></div></div>`; }
+function stRenumber(tbl){ [...tbl.querySelectorAll('.strow')].forEach((row,i)=>{ const b=row.querySelector('.st-setn'); if(b && !stTypeShort(row.dataset.type||'work')) b.textContent=(i+1); }); }
+function stLog(btn){ const row=btn.closest('.strow'); const exId=row.dataset.ex; const wi=row.querySelector('.st-w'), ri=row.querySelector('.st-r');
+  const w=parseFloat(wi.value), r=parseInt(ri.value);
+  if(isNaN(w)||isNaN(r)){ toast('Enter load and reps'); (isNaN(w)?wi:ri).focus(); return; }
+  const type=row.dataset.type||'work'; const dn=(store.program.trainingDays[trDayIdx])||''; const unit=wUnit();
+  const prior=(store.workouts||[]).filter(x=>x.exId===exId&&workSets(x));
+  const bestW=prior.reduce((m,x)=>Math.max(m,toDispW(x.w,x.unit)||0),0), bestE=prior.reduce((m,x)=>Math.max(m,e1rm(toDispW(x.w,x.unit),x.reps)),0);
+  store.workouts=store.workouts||[]; let wid=row.dataset.wid;
+  if(wid){ const rec=store.workouts.find(x=>x.id===wid); if(rec){ rec.w=w; rec.reps=r; rec.type=type; rec.unit=unit; } }
+  else { wid=uid(); store.workouts.push({id:wid,date:todayKey(),day:dn,exId,w,reps:r,type,effort:null,em:effMetric(),unit}); row.dataset.wid=wid; }
+  saveStore();
+  row.classList.add('done'); const lg=row.querySelector('.st-log'); lg.classList.add('done'); lg.textContent='✓';
+  startRest(restFor(type,T.goals[store.program.goal]));
+  if((type==='work'||type==='top')&&prior.length){ const ne=e1rm(w,r), nm=exById(exId).name, Uu=wUnit();
+    if(w>bestW){ store.prCount=(store.prCount||0)+1; saveStore(); celebrate('New top weight · '+nm+' '+w+Uu+' × '+r); }
+    else if(ne>bestE+0.05){ store.prCount=(store.prCount||0)+1; saveStore(); celebrate('Strength PR · '+nm+' ~'+Math.round(ne)+Uu+' est. 1RM'); } } }
+function stEdit(inp){ const row=inp.closest('.strow'); if(!row||!row.dataset.wid) return; const rec=(store.workouts||[]).find(x=>x.id===row.dataset.wid); if(!rec) return;
+  const w=parseFloat(row.querySelector('.st-w').value), r=parseInt(row.querySelector('.st-r').value); if(!isNaN(w)) rec.w=w; if(!isNaN(r)) rec.reps=r; rec.unit=wUnit(); saveStore(); }
+function stCycleType(btn){ const row=btn.closest('.strow'); const order=['work','warm','top','back','amrap','drop','rp']; const nx=order[(order.indexOf(row.dataset.type||'work')+1)%order.length];
+  row.dataset.type=nx; const m=setTypeMeta(nx); btn.className='st-setn '+m.cls; const idx=[...row.parentNode.querySelectorAll('.strow')].indexOf(row); btn.textContent=stTypeShort(nx)||(idx+1); btn.title='Set type: '+m.lab+'. Tap to change.';
+  if(row.dataset.wid){ const rec=(store.workouts||[]).find(x=>x.id===row.dataset.wid); if(rec){ rec.type=nx; saveStore(); } } }
+function stAddRow(exId,opts){ opts=opts||{}; const tbl=document.getElementById('settbl-'+exId); if(!tbl) return; const foot=tbl.querySelector('.st-foot'); const i=tbl.querySelectorAll('.strow').length;
+  const prev=stPrevSets(exId)[i]||null; const tmp=document.createElement('div'); tmp.innerHTML=stRowHTML(exId,i,null,prev); const row=tmp.firstElementChild;
+  if(opts.type){ row.dataset.type=opts.type; const b=row.querySelector('.st-setn'); const m=setTypeMeta(opts.type); b.className='st-setn '+m.cls; b.textContent=stTypeShort(opts.type)||(i+1); }
+  if(opts.w!=null&&opts.w!=='') row.querySelector('.st-w').value=opts.w; if(opts.r!=null&&opts.r!=='') row.querySelector('.st-r').value=opts.r;
+  foot.parentNode.insertBefore(row,foot); const wi=row.querySelector('.st-w'); if(wi&&!opts.nofocus) wi.focus(); }
+function stMenu(btn){ const row=btn.closest('.strow'); const open=row.querySelector('.stmenu'); stMenuClose(); if(open) return;
+  const menu=document.createElement('div'); menu.className='stmenu';
+  menu.innerHTML=`<button onclick="stDup(this)">Duplicate set</button><button onclick="stDrop(this)">Add drop set</button><button class="del" onclick="stDel(this)">Delete set</button>`;
+  row.appendChild(menu); setTimeout(()=>document.addEventListener('click',stMenuClose,{once:true}),0); }
+function stMenuClose(){ document.querySelectorAll('.stmenu').forEach(m=>m.remove()); }
+function stDup(b){ const row=b.closest('.strow'); const exId=row.dataset.ex; const w=row.querySelector('.st-w').value, r=row.querySelector('.st-r').value; stMenuClose(); stAddRow(exId,{type:row.dataset.type,w,r,nofocus:true}); }
+function stDrop(b){ const row=b.closest('.strow'); const exId=row.dataset.ex; const w=parseFloat(row.querySelector('.st-w').value); const dw=w?Math.round(w*0.8):''; stMenuClose(); stAddRow(exId,{type:'drop',w:dw}); }
+function stDel(b){ const row=b.closest('.strow'); const tbl=row.closest('.settbl'); stMenuClose(); if(row.dataset.wid){ store.workouts=(store.workouts||[]).filter(x=>x.id!==row.dataset.wid); saveStore(); } row.remove(); if(tbl) stRenumber(tbl); }
 function renderTraining(){
   const host=document.getElementById('training-body'); if(!host) return;
   if(!store.program){
@@ -7436,10 +7517,8 @@ function renderTraining(){
       <div class="exsr">${sets} × ${g.reps[0]}–${g.reps[1]} <span style="color:var(--mut2)">· ${e.equip}</span></div>
       ${progOn()?`<div class="exsug ${s.cls}">${s.txt}</div>`:(l?`<div class="exsug mut">Last: ${l.w}${l.unit||wUnit()} × ${l.reps}.</div>`:'')}
       <div style="margin:4px 0 2px">${(()=>{ const cd=exCapDisp(exId); const U=wUnit(); return `<button class="capchip ${cd!=null?'on':''}" onclick="setExCap('${exId}')" title="Cap this lift at your equipment's max, the app then adds reps instead of weight">⚑ ${cd!=null?`Max ${cd}${U}`:'Set a max'}</button>`; })()}</div>
-      <div class="settagrow adv-only">${SET_TYPES.map(t=>`<span class="settag ${t.cls} ${pt===t.k?'on':''}" onclick="pickType('${exId}','${t.k}')">${t.lab}</span>`).join('')}</div>
-      <div class="adv-only" style="font-size:10.5px;color:var(--mut);margin:2px 2px 4px">${tm.hint}</div>
-      <div class="exlog"><div class="qgrp"><button onclick="bump('w-${exId}',-${incFor(exId)})" aria-label="Less weight">−</button><input id="w-${exId}" type="number" min="0" inputmode="decimal" placeholder="${l?Math.round(toDispW(l.w,l.unit)):(startWeight(exId)||'wt')}" title="Weight in ${wUnit()}"><button onclick="bump('w-${exId}',${incFor(exId)})" aria-label="More weight">+</button></div><span>×</span><div class="qgrp"><button onclick="bump('r-${exId}',-1)" aria-label="Fewer reps">−</button><input id="r-${exId}" type="number" min="0" inputmode="numeric" placeholder="reps"><button onclick="bump('r-${exId}',1)" aria-label="More reps">+</button></div><input id="e-${exId}" class="adv-only" type="number" min="0" inputmode="decimal" placeholder="${effortLabel()}" style="width:52px" title="${effMetric()==='rpe'?'Rate of perceived exertion, 6-10':'Reps in reserve, 0-5'}"><button class="minibtn" onclick="logSet('${exId}')">Log</button></div>
-      ${(()=>{ const h=(store.workouts||[]).filter(w=>w.exId===exId).slice().reverse(); if(!h.length) return ''; return `<details class="exform exhist"><summary>Recent sets (${h.length})</summary>${h.slice(0,8).map(setHist).join('')}${h.length>8?`<div style="font-size:10.5px;color:var(--mut2);margin-top:4px">Showing 8 most recent.</div>`:''}</details>`; })()}
+      <div class="adv-only" style="font-size:10.5px;color:var(--mut2);margin:2px 2px 4px">Tap the set number to tag it (warm-up, top set, back-off…). <b>Prev</b> shows last session. The ⋮ menu duplicates, adds a drop set, or deletes.</div>
+      ${setTable(exId)}
       <details class="exform" open><summary>Muscles, demo &amp; form</summary>
         ${exDemo(exId)}
         ${exMuscleLine(exId)}
